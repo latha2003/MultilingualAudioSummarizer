@@ -3,7 +3,7 @@ import speech_recognition as sr
 import tempfile
 import google.generativeai as generative_ai
 from pydub import AudioSegment
-from googletrans import Translator  # Import Google Translator for language translation
+from googletrans import Translator 
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -72,24 +72,23 @@ def transcribe_audio(audio_file, language_code):
     return None
 
 def summarize_text_with_gemini(text, language_code):
-    """Summarizes the given text using the Gemini API and translates the summary."""
+    """Summarizes text using Gemini API and translates it."""
     if "summary" in st.session_state:
-        return st.session_state.summary  # Return cached summary
+        return st.session_state.summary  
 
-    prompt_parts = [f"Summarize the following text to include only important details:\n{text}"]
+    try:
+        model = generative_ai.GenerativeModel("gemini-1.5-flash-001")
+        response = model.generate_content([f"Give very short summary of this text to include important details only:\n{text}"])
+        summary = response.text
 
-    gen_config = {"temperature": 0.7, "top_p": 1, "top_k": 1, "max_output_tokens": 200}
-
-    model = generative_ai.GenerativeModel("gemini-1.5-flash-001", generation_config=gen_config)
-
-    response = model.generate_content(prompt_parts)
-    summary = response.text
-
-    translator = Translator()
-    translated_summary = translator.translate(summary, src='en', dest=language_code.split('-')[0]).text
-    
-    st.session_state.summary = translated_summary  # Store in session state
-    return translated_summary
+        #translator = Translator()
+        #translated_summary = translator.translate(summary, src='en', dest=language_code.split('-')[0]).text
+        
+        st.session_state.summary = summary  # Cache summary
+        return summary
+    except Exception as e:
+        st.error("⚠️ API limit reached. Please try again later.")
+        return "Summary unavailable due to API limits."
 
 
 def translate_summary(summary_text, new_language_code):
